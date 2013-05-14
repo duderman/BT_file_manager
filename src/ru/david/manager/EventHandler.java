@@ -323,13 +323,13 @@ public class EventHandler implements OnClickListener {
     		if(file.isFile()) {
     			double size = file.length();
         		if (size > GB)
-    				display_size = String.format("%.2f Гб ", (double)size / GB);
+    				display_size = String.format("%.2f Р“Р± ", (double)size / GB);
     			else if (size < GB && size > MG)
-    				display_size = String.format("%.2f Мб ", (double)size / MG);
+    				display_size = String.format("%.2f РњР± ", (double)size / MG);
     			else if (size < MG && size > KB)
-    				display_size = String.format("%.2f Кб ", (double)size/ KB);
+    				display_size = String.format("%.2f РљР± ", (double)size/ KB);
     			else
-    				display_size = String.format("%.2f байтов ", (double)size);
+    				display_size = String.format("%.2f Р±Р°Р№С‚РѕРІ ", (double)size);
         		
         		if(file.isHidden())
         			mViewHolder.bottomView.setText(display_size);
@@ -337,7 +337,7 @@ public class EventHandler implements OnClickListener {
         			mViewHolder.bottomView.setText(display_size);
         		
     		} else {
-    				mViewHolder.bottomView.setText(num_items + " файл(ов)");
+    				mViewHolder.bottomView.setText(num_items + " С„Р°Р№Р»(РѕРІ)");
     		}
     		
     		mViewHolder.topView.setText(file.getName());
@@ -367,37 +367,37 @@ public class EventHandler implements OnClickListener {
     		switch(type) {
     			case SEARCH_TYPE:
     				pr_dialog = ProgressDialog.show(mContext, "Searching", 
-    												"Поиск файла...",
+    												"РџРѕРёСЃРє С„Р°Р№Р»Р°...",
     												true, true);
     				break;
     				
     			case COPY_TYPE:
     				pr_dialog = ProgressDialog.show(mContext, "Copying", 
-    												"Копирование файла...", 
+    												"РљРѕРїРёСЂРѕРІР°РЅРёРµ С„Р°Р№Р»Р°...", 
     												true, false);
     				break;
     				
     			case UNZIP_TYPE:
     				pr_dialog = ProgressDialog.show(mContext, "Unzipping", 
-    												"Распаковка zip файла, пожалуйта подождите...",
+    												"Р Р°СЃРїР°РєРѕРІРєР° zip С„Р°Р№Р»Р°, РїРѕР¶Р°Р»СѓР№С‚Р° РїРѕРґРѕР¶РґРёС‚Рµ...",
     												true, false);
     				break;
     				
     			case UNZIPTO_TYPE:
     				pr_dialog = ProgressDialog.show(mContext, "Unzipping", 
-    												"Распаковка zip файла, пожалуйта подождите...",
+    												"Р Р°СЃРїР°РєРѕРІРєР° zip С„Р°Р№Р»Р°, РїРѕР¶Р°Р»СѓР№С‚Р° РїРѕРґРѕР¶РґРёС‚Рµ...",
     												true, false);
     				break;
     			
     			case ZIP_TYPE:
     				pr_dialog = ProgressDialog.show(mContext, "Zipping", 
-    												"Аривирование папки...", 
+    												"РђСЂРёРІРёСЂРѕРІР°РЅРёРµ РїР°РїРєРё...", 
     												true, false);
     				break;
     				
     			case DELETE_TYPE:
     				pr_dialog = ProgressDialog.show(mContext, "Deleting", 
-    												"Удаление фалов...", 
+    												"РЈРґР°Р»РµРЅРёРµ С„Р°Р»РѕРІ...", 
     												true, false);
     				break;
     		}
@@ -461,7 +461,7 @@ public class EventHandler implements OnClickListener {
 						}
 						
 						AlertDialog.Builder builder = new AlertDialog.Builder(mContext);
-						builder.setTitle("Найдено " + len + " файл(ов)");
+						builder.setTitle("РќР°Р№РґРµРЅРѕ " + len + " С„Р°Р№Р»(РѕРІ)");
 						builder.setItems(names, new DialogInterface.OnClickListener() {
 							
 							public void onClick(DialogInterface dialog, int position) {
@@ -480,10 +480,10 @@ public class EventHandler implements OnClickListener {
 					
 				case COPY_TYPE:
 					if(copy_rtn == 0)
-						Toast.makeText(mContext, "Файл удачно скопирован и вставлен", 
+						Toast.makeText(mContext, "Р¤Р°Р№Р» СѓРґР°С‡РЅРѕ СЃРєРѕРїРёСЂРѕРІР°РЅ Рё РІСЃС‚Р°РІР»РµРЅ", 
 											Toast.LENGTH_SHORT).show();
 					else
-						Toast.makeText(mContext, "Копирование не удалось", Toast.LENGTH_SHORT).show();
+						Toast.makeText(mContext, "РљРѕРїРёСЂРѕРІР°РЅРёРµ РЅРµ СѓРґР°Р»РѕСЃСЊ", Toast.LENGTH_SHORT).show();
 					
 					pr_dialog.dismiss();
 					mInfoLabel.setText("");

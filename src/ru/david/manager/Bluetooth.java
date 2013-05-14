@@ -1,23 +1,34 @@
 package ru.david.manager;
 
+import java.io.File;
+import java.util.ArrayList;
+
 import android.app.Activity;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
+import android.content.Context;
 import android.content.Intent;
 import android.content.pm.ActivityInfo;
+import android.graphics.Bitmap;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
 import android.view.KeyEvent;
+import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
-import android.view.Window;
 import android.view.View.OnClickListener;
+import android.view.ViewGroup;
+import android.view.Window;
 import android.view.inputmethod.EditorInfo;
+import android.widget.AdapterView;
+import android.widget.AdapterView.OnItemClickListener;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -33,7 +44,7 @@ public class Bluetooth extends Activity {
     public static final String DEVICE_NAME = "device_name";
     public static final String TOAST = "toast";
 
-    // Намерение запросить подключение
+    // РќР°РјРµСЂРµРЅРёРµ Р·Р°РїСЂРѕСЃРёС‚СЊ РїРѕРґРєР»СЋС‡РµРЅРёРµ
     private static final int REQUEST_CONNECT_DEVICE = 1;
     private static final int REQUEST_ENABLE_BT = 2;
 
@@ -43,37 +54,41 @@ public class Bluetooth extends Activity {
     private EditText mOutEditText;
     private Button mSendButton;
 
-    // Название подключенного устройства
+    // РќР°Р·РІР°РЅРёРµ РїРѕРґРєР»СЋС‡РµРЅРЅРѕРіРѕ СѓСЃС‚СЂРѕР№СЃС‚РІР°
     private String mConnectedDeviceName = null;
-    // Массив адаптера для разговорного потока
+    // РњР°СЃСЃРёРІ Р°РґР°РїС‚РµСЂР° РґР»СЏ СЂР°Р·РіРѕРІРѕСЂРЅРѕРіРѕ РїРѕС‚РѕРєР°
     private ArrayAdapter<String> mConversationArrayAdapter;
-    // Буфер строки для исходящих сообщений
+    // Р‘СѓС„РµСЂ СЃС‚СЂРѕРєРё РґР»СЏ РёСЃС…РѕРґСЏС‰РёС… СЃРѕРѕР±С‰РµРЅРёР№
     private StringBuffer mOutStringBuffer;
-    // Локальный Bluetooth адаптер
+    // Р›РѕРєР°Р»СЊРЅС‹Р№ Bluetooth Р°РґР°РїС‚РµСЂ
     private BluetoothAdapter mBluetoothAdapter = null;
-    // Объект для сервиса чата
+    // РћР±СЉРµРєС‚ РґР»СЏ СЃРµСЂРІРёСЃР° С‡Р°С‚Р°
     private BluetoothService mChatService = null;
+    
+    private FileManager mFileManager;
+    private String mCurrentPath = "/sdcard";
+    private ArrayList<String> mDataSource;
 
     private boolean connected = false;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        // Настройка расположения слоя
+        // РќР°СЃС‚СЂРѕР№РєР° СЂР°СЃРїРѕР»РѕР¶РµРЅРёСЏ СЃР»РѕСЏ
         setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
         requestWindowFeature(Window.FEATURE_CUSTOM_TITLE);
         setContentView(R.layout.bluetooth_layout);
         getWindow().setFeatureInt(Window.FEATURE_CUSTOM_TITLE, R.layout.custom_title);
-
-        // Расположение титров для custom title
+        
+        // Р Р°СЃРїРѕР»РѕР¶РµРЅРёРµ С‚РёС‚СЂРѕРІ РґР»СЏ custom title
         mTitle = (TextView) findViewById(R.id.title_left_text);
         mTitle.setText(R.string.app_name);
         mTitle = (TextView) findViewById(R.id.title_right_text);
 
-        // Получение локального Bluetooth адаптера
+        // РџРѕР»СѓС‡РµРЅРёРµ Р»РѕРєР°Р»СЊРЅРѕРіРѕ Bluetooth Р°РґР°РїС‚РµСЂР°
         mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
 
-        // Проверка на доступность блютуза
+        // РџСЂРѕРІРµСЂРєР° РЅР° РґРѕСЃС‚СѓРїРЅРѕСЃС‚СЊ Р±Р»СЋС‚СѓР·Р°
         if (mBluetoothAdapter == null) {
             Toast.makeText(this, "Bluetooth is not available", Toast.LENGTH_LONG).show();
             finish();
@@ -118,6 +133,16 @@ public class Bluetooth extends Activity {
         mConversationArrayAdapter = new ArrayAdapter<String>(this, R.layout.message);
         mConversationView = (ListView) findViewById(R.id.in);
         mConversationView.setAdapter(mConversationArrayAdapter);
+        mConversationView.setOnItemClickListener(new OnItemClickListener() {
+			@Override
+			public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+				String item = (String)mConversationArrayAdapter.getItem(position);
+				if(item.lastIndexOf(".") > -1)
+					return;
+				mCurrentPath += "/"+item;
+				mChatService.writeCommand(BluetoothService.FS_DIR, mCurrentPath.getBytes());
+			}
+		});
 
         // Initialize the compose field with a listener for the return key
         mOutEditText = (EditText) findViewById(R.id.edit_text_out);
@@ -205,9 +230,11 @@ public class Bluetooth extends Activity {
             case MESSAGE_STATE_CHANGE:
                 switch (msg.arg1) {
                 case BluetoothService.STATE_CONNECTED:
-                    mTitle.setText("Подключено к ");
+                    mTitle.setText("РџРѕРґРєР»СЋС‡РµРЅРѕ Рє ");
                     mTitle.append(mConnectedDeviceName);
                     mConversationArrayAdapter.clear();
+                    
+                    mChatService.writeCommand(BluetoothService.FS_DIR, mCurrentPath.getBytes());
                     break;
                 case BluetoothService.STATE_CONNECTING:
                     mTitle.setText(R.string.title_connecting);
@@ -222,24 +249,52 @@ public class Bluetooth extends Activity {
                 byte[] writeBuf = (byte[]) msg.obj;
                 // construct a string from the buffer
                 String writeMessage = new String(writeBuf);
-                mConversationArrayAdapter.add("Я:  " + writeMessage);
+                mConversationArrayAdapter.add("РЇ:  " + writeMessage);
                 break;
             case MESSAGE_READ:
                 byte[] readBuf = (byte[]) msg.obj;
-                String readMessage = new String(readBuf, 0, msg.arg1);
-                mConversationArrayAdapter.add(mConnectedDeviceName+":  " + readMessage);
+                String readMessage = new String(readBuf, 0, msg.arg1);                
+//                mConversationArrayAdapter.add(mConnectedDeviceName+":  " + readMessage);
                 break;
             case MESSAGE_DEVICE_NAME:
                 // save the connected device's name
                 mConnectedDeviceName = msg.getData().getString(DEVICE_NAME);
-                Toast.makeText(getApplicationContext(), "Подключено к "
+                Toast.makeText(getApplicationContext(), "РџРѕРґРєР»СЋС‡РµРЅРѕ Рє "
                                + mConnectedDeviceName, Toast.LENGTH_SHORT).show();
                 break;
             case MESSAGE_TOAST:
                 Toast.makeText(getApplicationContext(), msg.getData().getString(TOAST),
                                Toast.LENGTH_SHORT).show();
                 break;
+            case BluetoothService.FS_COMMAND:
+            	switch (msg.arg1) {
+                case BluetoothService.FS_DIR:
+                	ArrayList<String> dir = mFileManager.getNextDir(new String((byte[])msg.obj), true);
+                	String answer = "";
+                	for (String string : dir) {
+						answer += string + "==";
+					}
+                	mChatService.writeCommand(BluetoothService.FS_COMMAND_ANSWER, answer.getBytes());
+                    break;
+                case BluetoothService.FS_COMMAND_ANSWER:
+                	byte[] readBuf1 = (byte[]) msg.obj;
+                    String readMessage1 = new String(readBuf1, 0, msg.arg1);
+//                    mConversationArrayAdapter.clear();
+                    do{
+                    	int index = readMessage1.indexOf("==");
+                    	if(index == -1){
+                    		mConversationArrayAdapter.add(readMessage1);
+                    		break;
+                    	} else {                    		
+                    		mConversationArrayAdapter.add(readMessage1.substring(0, index));
+                    		readMessage1 = readMessage1.substring(index);
+                    	}
+                    } while(true);
+                	break;
+                }
+                break;
             }
+            
         }
     };
 
@@ -272,8 +327,8 @@ public class Bluetooth extends Activity {
       
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
-    	menu.add(0, R.id.scan, 0, "Клиент").setIcon(R.drawable.search);
-    	menu.add(0, R.id.discoverable, 0, "Сервер").setIcon(R.drawable.newfolder);   	
+    	menu.add(0, R.id.scan, 0, "РљР»РёРµРЅС‚").setIcon(R.drawable.search);
+    	menu.add(0, R.id.discoverable, 0, "РЎРµСЂРІРµСЂ").setIcon(R.drawable.newfolder);   	
     	return true;
     }
 
@@ -288,8 +343,9 @@ public class Bluetooth extends Activity {
         case R.id.discoverable:
             // Ensure this device is discoverable by others
             ensureDiscoverable();
+            mFileManager = new FileManager();
             return true;
         }
         return false;
-    }
+    }    
 }

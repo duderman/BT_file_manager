@@ -35,6 +35,11 @@ public class BluetoothService {
     public static final int STATE_LISTEN = 1;     // now listening for incoming connections
     public static final int STATE_CONNECTING = 2; // now initiating an outgoing connection
     public static final int STATE_CONNECTED = 3;  // now connected to a remote device
+    
+    // Constants with fs comands
+    public static final int FS_COMMAND = 0;
+    public static final int FS_COMMAND_ANSWER = 0;
+    public static final int FS_DIR = 2;
 
     /**
      * Constructor. Prepares a new BluetoothChat session.
@@ -158,6 +163,18 @@ public class BluetoothService {
         // Perform the write unsynchronized
         r.write(out);
     }
+    
+    public void writeCommand(int command, byte[] out) {
+        // Create temporary object
+        ConnectedThread r;
+        // Synchronize a copy of the ConnectedThread
+        synchronized (this) {
+            if (mState != STATE_CONNECTED) return;
+            r = mConnectedThread;
+        }
+        // Perform the write unsynchronized
+        r.writeCommand(command, out);
+    }
 
     /**
      * Indicate that the connection attempt failed and notify the UI Activity.
@@ -168,7 +185,7 @@ public class BluetoothService {
         // Send a failure message back to the Activity
         Message msg = mHandler.obtainMessage(Bluetooth.MESSAGE_TOAST);
         Bundle bundle = new Bundle();
-        bundle.putString(Bluetooth.TOAST, "Невозможно подключиться к устройству");
+        bundle.putString(Bluetooth.TOAST, "РќРµРІРѕР·РјРѕР¶РЅРѕ РїРѕРґРєР»СЋС‡РёС‚СЊСЃСЏ Рє СѓСЃС‚СЂРѕР№СЃС‚РІСѓ");
         msg.setData(bundle);
         mHandler.sendMessage(msg);
     }
@@ -182,7 +199,7 @@ public class BluetoothService {
         // Send a failure message back to the Activity
         Message msg = mHandler.obtainMessage(Bluetooth.MESSAGE_TOAST);
         Bundle bundle = new Bundle();
-        bundle.putString(Bluetooth.TOAST, "Подключение прервано");
+        bundle.putString(Bluetooth.TOAST, "РџРѕРґРєР»СЋС‡РµРЅРёРµ РїСЂРµСЂРІР°РЅРѕ");
         msg.setData(bundle);
         mHandler.sendMessage(msg);
     }
@@ -358,13 +375,13 @@ public class BluetoothService {
             byte[] buffer = new byte[1024];
             int bytes;
 
-            // Прослушиваем InputStream пока не произойдет исключение
+            // РџСЂРѕСЃР»СѓС€РёРІР°РµРј InputStream РїРѕРєР° РЅРµ РїСЂРѕРёР·РѕР№РґРµС‚ РёСЃРєР»СЋС‡РµРЅРёРµ
             while (true) {
                 try {
-                	// читаем из InputStream
+                	// С‡РёС‚Р°РµРј РёР· InputStream
                     bytes = mmInStream.read(buffer);
 
-                    // посылаем прочитанные байты главной деятельности
+                    // РїРѕСЃС‹Р»Р°РµРј РїСЂРѕС‡РёС‚Р°РЅРЅС‹Рµ Р±Р°Р№С‚С‹ РіР»Р°РІРЅРѕР№ РґРµСЏС‚РµР»СЊРЅРѕСЃС‚Рё
                     mHandler.obtainMessage(Bluetooth.MESSAGE_READ, bytes, -1, buffer)
                             .sendToTarget();
                 } catch (IOException e) {
@@ -375,8 +392,8 @@ public class BluetoothService {
             }
         }
 
-        /* Вызываем этот метод из главной деятельности, чтобы отправить данные 
-        удаленному устройству */
+        /* Р’С‹Р·С‹РІР°РµРј СЌС‚РѕС‚ РјРµС‚РѕРґ РёР· РіР»Р°РІРЅРѕР№ РґРµСЏС‚РµР»СЊРЅРѕСЃС‚Рё, С‡С‚РѕР±С‹ РѕС‚РїСЂР°РІРёС‚СЊ РґР°РЅРЅС‹Рµ 
+        СѓРґР°Р»РµРЅРЅРѕРјСѓ СѓСЃС‚СЂРѕР№СЃС‚РІСѓ */
         public void write(byte[] buffer) {
             try {
                 mmOutStream.write(buffer);
@@ -388,9 +405,20 @@ public class BluetoothService {
 
             }
         }
+        
+        public void writeCommand(int command, byte[] buffer){
+        	try {
+                mmOutStream.write(buffer);
+                // Share the sent message back to the UI Activity
+                mHandler.obtainMessage(FS_COMMAND, command, -1, buffer)
+                        .sendToTarget();
+            } catch (IOException e) {
 
-        /* Вызываем этот метод из главной деятельности, 
-        чтобы разорвать соединение */
+            }
+        }
+
+        /* Р’С‹Р·С‹РІР°РµРј СЌС‚РѕС‚ РјРµС‚РѕРґ РёР· РіР»Р°РІРЅРѕР№ РґРµСЏС‚РµР»СЊРЅРѕСЃС‚Рё, 
+        С‡С‚РѕР±С‹ СЂР°Р·РѕСЂРІР°С‚СЊ СЃРѕРµРґРёРЅРµРЅРёРµ */
         public void cancel() {
             try {
                 mmSocket.close();

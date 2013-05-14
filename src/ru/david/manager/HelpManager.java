@@ -23,9 +23,9 @@ public class HelpManager extends Activity implements OnClickListener {
 		requestWindowFeature(Window.FEATURE_NO_TITLE);
 		setContentView(R.layout.help_layout);
 		
-		String text = "Курсовой проект\n" +
-					  "Группа 10-ИТ-3\n"
-					+ "Байлеванян Д.Г.\n";
+		String text = "РљСѓСЂСЃРѕРІРѕР№ РїСЂРѕРµРєС‚\n" +
+					  "Р“СЂСѓРїРїР° 10-РРў-3\n"
+					+ "Р‘Р°Р№Р»РµРІР°РЅСЏРЅ Р”.Р“.\n";
 		
 		TextView label = (TextView)findViewById(R.id.help_top_label);
 		label.setText(text);
@@ -47,7 +47,7 @@ public class HelpManager extends Activity implements OnClickListener {
 					startActivity(i);
 					
 				} catch(ActivityNotFoundException e) {
-					Toast.makeText(this, "Извините, невозможно открыть вебсайт", Toast.LENGTH_SHORT).show();
+					Toast.makeText(this, "РР·РІРёРЅРёС‚Рµ, РЅРµРІРѕР·РјРѕР¶РЅРѕ РѕС‚РєСЂС‹С‚СЊ РІРµР±СЃР°Р№С‚", Toast.LENGTH_SHORT).show();
 				}
 				break;
 		}

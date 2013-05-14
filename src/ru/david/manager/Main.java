@@ -119,8 +119,8 @@ public final class Main extends ListActivity {
         	mReturnIntent = true;
         
         } else if (intent.getAction().equals(ACTION_WIDGET)) {
-        	Log.e("MAIN", "Widget action, string = " + intent.getExtras().getString("�����"));
-        	mHandler.updateDirectory(mFileMag.getNextDir(intent.getExtras().getString("�����"), true));
+        	Log.e("MAIN", "Widget action, string = " + intent.getExtras().getString("Папка"));
+        	mHandler.updateDirectory(mFileMag.getNextDir(intent.getExtras().getString("Папка"), true));
         	
         }
     }
@@ -129,7 +129,7 @@ public final class Main extends ListActivity {
 	protected void onSaveInstanceState(Bundle outState) {
 		super.onSaveInstanceState(outState);
 		
-		outState.putString("������������", mFileMag.getCurrentDir());
+		outState.putString("location", mFileMag.getCurrentDir());
 	}
 	
 	/*(non Java-Doc)
@@ -173,7 +173,7 @@ public final class Main extends ListActivity {
 		    			mUseBackKey = true;
 		    		
 	    		} else {
-	    			Toast.makeText(this, "�� ������� ��������� �����, ���� ����", 
+	    			Toast.makeText(this, "Не удается прочитать папку, нету прав", 
 	    							Toast.LENGTH_SHORT).show();
 	    		}
 	    	}
@@ -244,9 +244,9 @@ public final class Main extends ListActivity {
 		    		AlertDialog.Builder builder = new AlertDialog.Builder(this);
 		    		AlertDialog alert;
 		    		mZippedTarget = mFileMag.getCurrentDir() + "/" + item;
-		    		CharSequence[] option = {"������� �����", "������� �..."};
+		    		CharSequence[] option = {"Извлечь здесь", "Извлечь в..."};
 		    		
-		    		builder.setTitle("�������");
+		    		builder.setTitle("Извлечь");
 		    		builder.setItems(option, new DialogInterface.OnClickListener() {
 		
 						public void onClick(DialogInterface dialog, int which) {
@@ -257,8 +257,8 @@ public final class Main extends ListActivity {
 									break;
 									
 								case 1:
-									mDetailLabel.setText("����������� " + item + 
-														 " ��� ����������");
+									mDetailLabel.setText("Удерживайте " + item + 
+														 " для извлечения");
 									mHoldingZip = true;
 									break;
 							}
@@ -298,7 +298,7 @@ public final class Main extends ListActivity {
 			    		try {
 			    			startActivity(pdfIntent);
 			    		} catch (ActivityNotFoundException e) {
-			    			Toast.makeText(this, "��������, ���������� ����� pdf �����������", 
+			    			Toast.makeText(this, "Извините, невозможно найти pdf просмотрщик", 
 									Toast.LENGTH_SHORT).show();
 			    		}
 		    		}
@@ -336,7 +336,7 @@ public final class Main extends ListActivity {
 		    			try {
 		    				startActivity(htmlIntent);
 		    			} catch(ActivityNotFoundException e) {
-		    				Toast.makeText(this, "��������, ���������� ����� HTML �������", 
+		    				Toast.makeText(this, "Извините, невозможно найти HTML браузер", 
 		    									Toast.LENGTH_SHORT).show();
 		    			}
 	    			}
@@ -379,8 +379,8 @@ public final class Main extends ListActivity {
 			    		try {
 			    			startActivity(generic);
 			    		} catch(ActivityNotFoundException e) {
-			    			Toast.makeText(this, "��������, ������ �� ������� " +
-			    						   "��� �������� " + file.getName(), 
+			    			Toast.makeText(this, "Извините, ничего не найдено " +
+			    						   "для открытия " + file.getName(), 
 			    						   Toast.LENGTH_SHORT).show();
 			    		}
 	    			}
@@ -392,9 +392,9 @@ public final class Main extends ListActivity {
     /* ================Menus, options menu and context menu start here=================*/
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
-    	menu.add(0, MENU_MKDIR, 0, "�������").setIcon(R.drawable.newfolder);
-    	menu.add(0, MENU_SEARCH, 0, "�����").setIcon(R.drawable.search);
-    	menu.add(0, MENU_QUIT, 0, "�����").setIcon(R.drawable.logout);
+    	menu.add(0, MENU_MKDIR, 0, "Создать").setIcon(R.drawable.newfolder);
+    	menu.add(0, MENU_SEARCH, 0, "Поиск").setIcon(R.drawable.search);
+    	menu.add(0, MENU_QUIT, 0, "Выход").setIcon(R.drawable.logout);
     	
     	return true;
     }
@@ -425,21 +425,21 @@ public final class Main extends ListActivity {
     	mSelectedListItem = mHandler.getData(_info.position);
     	
     	if(mFileMag.isDirectory(mSelectedListItem)) {
-    		menu.setHeaderTitle("�������� � ������");
-        	menu.add(0, D_MENU_DELETE, 0, "�������");
-        	menu.add(0, D_MENU_RENAME, 0, "�������������");
-        	menu.add(0, D_MENU_COPY, 0, "����������");
-        	menu.add(0, D_MENU_MOVE, 0, "�����������");
-        	menu.add(0, D_MENU_ZIP, 0, "��������������");
-        	menu.add(0, D_MENU_PASTE, 0, "��������").setEnabled(mHoldingFile);
-        	menu.add(0, D_MENU_UNZIP, 0, "������� �����").setEnabled(mHoldingZip);
+    		menu.setHeaderTitle("Операции с папкой");
+        	menu.add(0, D_MENU_DELETE, 0, "Удалить");
+        	menu.add(0, D_MENU_RENAME, 0, "Переименовать");
+        	menu.add(0, D_MENU_COPY, 0, "Копировать");
+        	menu.add(0, D_MENU_MOVE, 0, "Переместить");
+        	menu.add(0, D_MENU_ZIP, 0, "Заархивировать");
+        	menu.add(0, D_MENU_PASTE, 0, "Вставить").setEnabled(mHoldingFile);
+        	menu.add(0, D_MENU_UNZIP, 0, "Извлечь здесь").setEnabled(mHoldingZip);
     		
     	} else if(!mFileMag.isDirectory(mSelectedListItem)) {
-        	menu.setHeaderTitle("�������� � ������");
-    		menu.add(0, F_MENU_DELETE, 0, "�������");
-    		menu.add(0, F_MENU_RENAME, 0, "�������������");
-    		menu.add(0, F_MENU_COPY, 0, "����������");
-    		menu.add(0, F_MENU_MOVE, 0, "�����������");
+        	menu.setHeaderTitle("Операции с файлом");
+    		menu.add(0, F_MENU_DELETE, 0, "Удалить");
+    		menu.add(0, F_MENU_RENAME, 0, "Переименовать");
+    		menu.add(0, F_MENU_COPY, 0, "Копировать");
+    		menu.add(0, F_MENU_MOVE, 0, "Переместить");
     	}	
     }
     
@@ -450,18 +450,18 @@ public final class Main extends ListActivity {
     		case D_MENU_DELETE:
     		case F_MENU_DELETE:
     			AlertDialog.Builder builder = new AlertDialog.Builder(this);
-    			builder.setTitle("�������� ");
+    			builder.setTitle("Внимание ");
     			builder.setIcon(R.drawable.warning);
-    			builder.setMessage("�������� " + mSelectedListItem +
-    							" �� ����� ���� ��������. �� �������, ��� ������ �������?");
+    			builder.setMessage("Удаление " + mSelectedListItem +
+    							" не может быть отменено. Вы уверены, что хотите удалить?");
     			builder.setCancelable(false);
     			
-    			builder.setNegativeButton("������", new DialogInterface.OnClickListener() {
+    			builder.setNegativeButton("Отмена", new DialogInterface.OnClickListener() {
 					public void onClick(DialogInterface dialog, int which) {
 						dialog.dismiss();
 					}
     			});
-    			builder.setPositiveButton("�������", new DialogInterface.OnClickListener() {
+    			builder.setPositiveButton("Удалить", new DialogInterface.OnClickListener() {
 					public void onClick(DialogInterface dialog, int which) {
 						mHandler.deleteFile(mFileMag.getCurrentDir() + "/" + mSelectedListItem);
 					}
@@ -488,7 +488,7 @@ public final class Main extends ListActivity {
     			mHoldingFile = true;
     			
     			mCopiedTarget = mFileMag.getCurrentDir() +"/"+ mSelectedListItem;
-    			mDetailLabel.setText("�������� " + mSelectedListItem);
+    			mDetailLabel.setText("Ожидание " + mSelectedListItem);
     			return true;
     			
     		
@@ -520,7 +520,7 @@ public final class Main extends ListActivity {
 	    				mPathLabel.setText(current_dir);
 	    				
     				} else {
-    					Toast.makeText(this, "� ��� ��� ���������� ��� ���������� " + name, 
+    					Toast.makeText(this, "У вас нет разрешения для распаковки " + name, 
     							Toast.LENGTH_SHORT).show();
     				}
     			}
@@ -542,7 +542,7 @@ public final class Main extends ListActivity {
     	switch(id) {
     		case MENU_MKDIR:
     			dialog.setContentView(R.layout.input_layout);
-    			dialog.setTitle("�������� ����� �����");
+    			dialog.setTitle("Создание новой папки");
     			dialog.setCancelable(false);
     			
     			ImageView icon = (ImageView)dialog.findViewById(R.id.input_icon);
@@ -560,10 +560,10 @@ public final class Main extends ListActivity {
     					if (input.getText().length() > 1) {
     						if (mFileMag.createDir(mFileMag.getCurrentDir() + "/", input.getText().toString()) == 0)
     							Toast.makeText(Main.this, 
-    										   "����� " + input.getText().toString() + " �������", 
+    										   "Папка " + input.getText().toString() + " создана", 
     										   Toast.LENGTH_LONG).show();
     						else
-    							Toast.makeText(Main.this, "����� ����� �� ���� �������", Toast.LENGTH_SHORT).show();
+    							Toast.makeText(Main.this, "Новая папка не была создана", Toast.LENGTH_SHORT).show();
     					}
     					
     					dialog.dismiss();
@@ -578,7 +578,7 @@ public final class Main extends ListActivity {
     		case D_MENU_RENAME:
     		case F_MENU_RENAME:
     			dialog.setContentView(R.layout.input_layout);
-    			dialog.setTitle("������������� " + mSelectedListItem);
+    			dialog.setTitle("Переименовать " + mSelectedListItem);
     			dialog.setCancelable(false);
     			
     			ImageView rename_icon = (ImageView)dialog.findViewById(R.id.input_icon);
@@ -590,7 +590,7 @@ public final class Main extends ListActivity {
     			
     			Button rename_cancel = (Button)dialog.findViewById(R.id.input_cancel_b);
     			Button rename_create = (Button)dialog.findViewById(R.id.input_create_b);
-    			rename_create.setText("�������������");
+    			rename_create.setText("Переименовать");
     			
     			rename_create.setOnClickListener(new OnClickListener() {
     				public void onClick (View v) {
@@ -598,10 +598,10 @@ public final class Main extends ListActivity {
     						dialog.dismiss();
     					
     					if(mFileMag.renameTarget(mFileMag.getCurrentDir() +"/"+ mSelectedListItem, rename_input.getText().toString()) == 0) {
-    						Toast.makeText(Main.this, mSelectedListItem + " ��� ������������ � " +rename_input.getText().toString(),
+    						Toast.makeText(Main.this, mSelectedListItem + " был переименован в " +rename_input.getText().toString(),
     								Toast.LENGTH_LONG).show();
     					}else
-    						Toast.makeText(Main.this, mSelectedListItem + " �� ��� ������������", Toast.LENGTH_LONG).show();
+    						Toast.makeText(Main.this, mSelectedListItem + " не был переименован", Toast.LENGTH_LONG).show();
     						
     					dialog.dismiss();
     					String temp = mFileMag.getCurrentDir();
@@ -615,19 +615,19 @@ public final class Main extends ListActivity {
     		
     		case MENU_SEARCH:
     			dialog.setContentView(R.layout.input_layout);
-    			dialog.setTitle("�����");
+    			dialog.setTitle("Поиск");
     			dialog.setCancelable(false);
     			
     			ImageView searchIcon = (ImageView)dialog.findViewById(R.id.input_icon);
     			searchIcon.setImageResource(R.drawable.search);
     			
     			TextView search_label = (TextView)dialog.findViewById(R.id.input_label);
-    			search_label.setText("����� �����");
+    			search_label.setText("Поиск файла");
     			final EditText search_input = (EditText)dialog.findViewById(R.id.input_inputText);
     			
     			Button search_button = (Button)dialog.findViewById(R.id.input_create_b);
     			Button cancel_button = (Button)dialog.findViewById(R.id.input_cancel_b);
-    			search_button.setText("�����");
+    			search_button.setText("Поиск");
     			
     			search_button.setOnClickListener(new OnClickListener() {
     				public void onClick(View v) {
