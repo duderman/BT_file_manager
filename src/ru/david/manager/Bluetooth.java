@@ -235,6 +235,9 @@ public class Bluetooth extends Activity {
                             mTitle.setText("Подключено к (STATE_CONNECTED) ");
                             mTitle.append(mConnectedDeviceName);
                             mConversationArray.clear();
+                            if(!isServer)
+                            	mChatService.writeCommand(BluetoothService.FS_DIR,
+                            		"sdcard".getBytes());
                             break;
                         case BluetoothService.STATE_CONNECTING:
                             mTitle.setText(R.string.title_connecting);
@@ -263,8 +266,6 @@ public class Bluetooth extends Activity {
                     Toast.makeText(getApplicationContext(),
                             "Подключено к (DEVICE_NAME) " + mConnectedDeviceName,
                             Toast.LENGTH_SHORT).show();
-                    mChatService.writeCommand(BluetoothService.FS_DIR,
-                            "sdcard".getBytes());
                     break;
                 case MESSAGE_TOAST:
                     Toast.makeText(getApplicationContext(),
@@ -358,7 +359,7 @@ public class Bluetooth extends Activity {
                 return true;
             case R.id.discoverable:
                 // Ensure this device is discoverable by others
-                isServer = true;
+                this.isServer = true;
                 mFileManager = new FileManager();
                 ensureDiscoverable();
                 return true;
