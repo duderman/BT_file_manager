@@ -1,4 +1,4 @@
-package ru.david.manager;
+﻿package ru.david.manager;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -37,9 +37,9 @@ public class BluetoothService {
     public static final int STATE_CONNECTED = 3;  // now connected to a remote device
     
     // Constants with fs comands
-    public static final int FS_COMMAND = 0;
-    public static final int FS_COMMAND_ANSWER = 0;
-    public static final int FS_DIR = 2;
+    public static final int FS_COMMAND = 6;
+    public static final int FS_COMMAND_ANSWER = 7;
+    public static final int FS_DIR = 8;
 
     /**
      * Constructor. Prepares a new BluetoothChat session.

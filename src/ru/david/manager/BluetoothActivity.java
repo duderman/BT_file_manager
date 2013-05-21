@@ -1,4 +1,4 @@
-package ru.david.manager;
+﻿package ru.david.manager;
 
 import java.util.Set;
 import android.app.Activity;

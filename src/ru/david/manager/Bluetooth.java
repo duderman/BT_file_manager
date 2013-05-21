@@ -1,4 +1,4 @@
-package ru.david.manager;
+﻿package ru.david.manager;
 
 import android.app.Activity;
 import android.bluetooth.BluetoothAdapter;
@@ -414,6 +414,7 @@ public class Bluetooth extends Activity {
             if (file != null) {
                 if (file.lastIndexOf(".") > -1) {
                     String sub_ext = file.substring(file.lastIndexOf(".") + 1);
+
 
 					/*
                      * This series of else if statements will determine which
