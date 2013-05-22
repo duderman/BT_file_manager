@@ -4,7 +4,7 @@
     <string name="media_dialog">Media preview</string>
     <string name="dir_info">Folder Information</string>
     <string name="manager_act">Phone Management</string>
-	    <!--  BluetoothViewer -->
+    <!--  BluetoothViewer -->
     <string name="send">Send</string>
     <string name="not_connected">Не удалось подключиться</string>
     <string name="bt_not_enabled_leaving">Bluetooth не включён</string>
