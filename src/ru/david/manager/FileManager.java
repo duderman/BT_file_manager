@@ -52,13 +52,17 @@ public class FileManager {
      *
      * @return the home directory
      */
-    public ArrayList<String> setHomeDir(String name) {
+    public ArrayList<String> setHomeDir(String name, boolean withPrefix) {
         //This will eventually be placed as a settings item
         mPathStack.clear();
         mPathStack.push("/");
         mPathStack.push(name);
 
-        return populate_list(false);
+        return populate_list(withPrefix);
+    }
+
+    public ArrayList<String> setHomeDir(String name) {
+        return setHomeDir(name, false);
     }
 
     /**
@@ -552,7 +556,7 @@ public class FileManager {
             String current = mPathStack.peek();
             ArrayList<String> resultArray = new ArrayList<String>();
             if (mDirContent.size() == 1 && mDirContent.get(0) == "Empty") {
-                resultArray.add("F_Empty");
+                resultArray.add("N_Empty");
             } else
                 for (String fileStr : mDirContent) {
                     if (new File(current + "/" + fileStr).isDirectory())

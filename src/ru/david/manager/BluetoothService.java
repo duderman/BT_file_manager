@@ -421,6 +421,16 @@ public class BluetoothService {
                         int com = Bluetooth.FS_DIR;
                         if (command.equals("FS_COMMAND_ANSWER"))
                             com = Bluetooth.FS_COMMAND_ANSWER;
+                        else if (command.equals("FS_BACK"))
+                            com = Bluetooth.FS_BACK;
+                        else if (command.equals("FS_HOME"))
+                            com = Bluetooth.FS_HOME;
+                        else if (command.equals("FS_FILE_ANSWER"))
+                            com = Bluetooth.FS_FILE_ANSWER;
+                        else if (command.equals("FS_FILE"))
+                            com = Bluetooth.FS_FILE;
+                        else if (command.equals("FS_ERROR"))
+                            com = Bluetooth.FS_ERROR;
                         mHandler.obtainMessage(Bluetooth.FS_COMMAND, com, message.getBytes().length, message.getBytes())
                                 .sendToTarget();
                     } else // посылаем прочитанные байты главной деятельности

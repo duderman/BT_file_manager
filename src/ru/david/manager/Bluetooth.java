@@ -8,14 +8,17 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.pm.ActivityInfo;
 import android.graphics.Color;
+import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
+import android.util.Log;
 import android.view.*;
 import android.view.View.OnClickListener;
 import android.view.inputmethod.EditorInfo;
 import android.widget.*;
 
+import java.io.*;
 import java.util.ArrayList;
 
 public class Bluetooth extends ListActivity {
@@ -26,9 +29,16 @@ public class Bluetooth extends ListActivity {
     public static final int MESSAGE_DEVICE_NAME = 4;
     public static final int MESSAGE_TOAST = 5;
     // Constants with fs comands
-    public static final int FS_DIR = 8;
-    public static final int FS_COMMAND_ANSWER = 7;
     public static final int FS_COMMAND = 6;
+    public static final int FS_COMMAND_ANSWER = 7;
+    public static final int FS_DIR = 8;
+    public static final int FS_BACK = 9;
+    public static final int FS_HOME = 10;
+    public static final int FS_FILE = 11;
+    public static final int FS_FILE_ANSWER = 12;
+    public static final int FS_ERROR = 13;
+
+    public static final long MAX_FILE_SIZE = 161280;
 
     public static final String DEVICE_NAME = "device_name";
     public static final String TOAST = "toast";
@@ -58,10 +68,17 @@ public class Bluetooth extends ListActivity {
 
     private FileManager mFileManager;
     private String mCurrentPath = "/sdcard";
+    private String mCurrentItem = "";
 
     private boolean connected = false;
 
     private boolean isServer = false;
+
+    //controls
+    private Button backButton;
+    private Button homeButton;
+    private TextView pathTextView;
+    private HorizontalScrollView buttonsHolder;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -87,6 +104,23 @@ public class Bluetooth extends ListActivity {
                     Toast.LENGTH_LONG).show();
             finish();
             return;
+        }
+
+        backButton = (Button) findViewById(R.id.blt_back_button);
+        homeButton = (Button) findViewById(R.id.blt_home_button);
+        pathTextView = (TextView) findViewById(R.id.blt_path_label);
+        buttonsHolder = (HorizontalScrollView) findViewById(R.id.blt_buttons_view);
+        backButton.setOnClickListener(myOnClickListener);
+        homeButton.setOnClickListener(myOnClickListener);
+        switchControlVisibility(View.GONE);
+    }
+
+    private void switchControlVisibility(int visibility) {
+        if (visibility != View.GONE && visibility != View.VISIBLE)
+            return;
+        else {
+            pathTextView.setVisibility(visibility);
+            buttonsHolder.setVisibility(visibility);
         }
     }
 
@@ -159,10 +193,15 @@ public class Bluetooth extends ListActivity {
     protected void onListItemClick(ListView l, View v, int position, long id) {
         String item = (String) mConversationArray
                 .get(position);
-        if (item.lastIndexOf(".") > -1)
-            return;
-        mCurrentPath = "/" + item;
-        mChatService.write(("FS_DIR:" + item).getBytes());
+        String type = mFileTypesArray.get(position);
+        if (type == "F_") {
+            mConversationView.setEnabled(false);
+            mChatService.write(("FS_FILE:" + item).getBytes());
+            mCurrentItem = item;
+        } else {
+            setCurrentPath(mCurrentPath + "/" + item);
+            mChatService.write(("FS_DIR:" + item).getBytes());
+        }
     }
 
     @Override
@@ -239,9 +278,12 @@ public class Bluetooth extends ListActivity {
                         case BluetoothService.STATE_CONNECTED:
                             mTitle.setText("Подключено к (STATE_CONNECTED) ");
                             mTitle.append(mConnectedDeviceName);
-                            mConversationArray.clear();
-                            if (!isServer)
+                            clearConversation(true);
+                            if (!isServer) {
                                 mChatService.write("FS_DIR:sdcard".getBytes());
+                                setCurrentPath("/sdcard");
+                                switchControlVisibility(View.VISIBLE);
+                            }
                             break;
                         case BluetoothService.STATE_CONNECTING:
                             mTitle.setText(R.string.title_connecting);
@@ -249,23 +291,24 @@ public class Bluetooth extends ListActivity {
                         case BluetoothService.STATE_LISTEN:
                         case BluetoothService.STATE_NONE:
                             mTitle.setText(R.string.title_not_connected);
-                            mConversationArray.clear();
-                            mConversationArrayAdapter.notifyDataSetChanged();
+                            isServer = false;
+                            clearConversation(true);
+                            switchControlVisibility(View.GONE);
                             break;
                     }
                     break;
-                case MESSAGE_WRITE:
-                    byte[] writeBuf = (byte[]) msg.obj;
-                    // construct a string from the buffer
-                    String writeMessage = new String(writeBuf);
-                    mConversationArray.add("Я:  " + writeMessage);
-                    break;
-                case MESSAGE_READ:
-                    byte[] readBuf = (byte[]) msg.obj;
-                    String readMessage = new String(readBuf, 0, msg.arg1);
-                    // mConversationArrayAdapter.add(mConnectedDeviceName+":  " +
-                    // readMessage);
-                    break;
+//                case MESSAGE_WRITE:
+//                    byte[] writeBuf = (byte[]) msg.obj;
+//                    // construct a string from the buffer
+//                    String writeMessage = new String(writeBuf);
+//                    mConversationArray.add("Я:  " + writeMessage);
+//                    break;
+//                case MESSAGE_READ:
+//                    byte[] readBuf = (byte[]) msg.obj;
+//                    String readMessage = new String(readBuf, 0, msg.arg1);
+//                    // mConversationArrayAdapter.add(mConnectedDeviceName+":  " +
+//                    // readMessage);
+//                    break;
                 case MESSAGE_DEVICE_NAME:
                     // save the connected device's name
                     mConnectedDeviceName = msg.getData().getString(DEVICE_NAME);
@@ -281,9 +324,17 @@ public class Bluetooth extends ListActivity {
                 case FS_COMMAND:
                     switch (msg.arg1) {
                         case FS_DIR:
+                        case FS_BACK:
+                        case FS_HOME:
                             if (isServer) {
-                                ArrayList<String> dir = mFileManager.getNextDir(new String(
-                                        (byte[]) msg.obj, 0, msg.arg2), false, true);
+                                addChatRecord("Получено сообщение" + msg.arg1 + " от " + mConnectedDeviceName);
+                                ArrayList<String> dir = new ArrayList<String>();
+                                if (msg.arg1 == FS_DIR)
+                                    dir = mFileManager.getNextDir(new String((byte[]) msg.obj, 0, msg.arg2), false, true);
+                                else if (msg.arg1 == FS_BACK)
+                                    dir = mFileManager.getPreviousDir(true);
+                                else
+                                    dir = mFileManager.setHomeDir("/sdcard", true);
                                 String answer = "";
                                 for (String string : dir) {
                                     answer += string + "==";
@@ -293,12 +344,54 @@ public class Bluetooth extends ListActivity {
                                 mChatService.write(answer.getBytes());
                             }
                             break;
+                        case FS_FILE:
+                            if (isServer) {
+                                addChatRecord("Получено сообщение" + msg.arg1 + " от " + mConnectedDeviceName);
+                                String fileName = mFileManager.getCurrentDir() + new String((byte[]) msg.obj, 0, msg.arg2);
+                                File file = new File(fileName);
+                                if ("FS_COMMAND_ANSWER".getBytes().length + file.length() < MAX_FILE_SIZE) {
+                                    try {
+                                        byte[] fileByBytes = new byte[(int) ("FS_COMMAND_ANSWER".getBytes().length + file.length())];
+                                        FileInputStream fis = new FileInputStream(file);
+                                        fis.read(fileByBytes);
+                                        mChatService.write(concatArrays("FS_FILE_ANSWER:".getBytes(), fileByBytes));
+                                    } catch (FileNotFoundException e) {
+                                        addChatRecord("Файл " + fileName + " не найден");
+                                        mChatService.write("FS_ERROR:Файл не найден".getBytes());
+                                        Log.e("FS_ERROR", "File " + fileName + " not found");
+                                    } catch (IOException e) {
+                                        addChatRecord("Ошибка при кодировании файла");
+                                        mChatService.write("FS_ERROR:Непредвиденная ошибка".getBytes());
+                                        Log.e("FS_ERROR", "Error when packing bytes of file " + fileName);
+                                    }
+                                } else {
+                                    addChatRecord("Файл слишком большой");
+                                    mChatService.write("FS_ERROR:Файл слишком большой".getBytes());
+                                    Log.e("FS_ERROR", "File too large too send over Bluetooth " + fileName);
+                                }
+
+                            }
+                            break;
+                        case FS_FILE_ANSWER:
+                            File file = new File(getExternalFilesDir(null), mCurrentItem);
+                            try {
+                                FileOutputStream fos = new FileOutputStream(file);
+                                fos.write((byte[]) msg.obj);
+                                fos.close();
+                                mConversationView.setEnabled(true);
+                                Intent intent = new Intent();
+                                intent.setAction(android.content.Intent.ACTION_VIEW);
+                                intent.setDataAndType(Uri.fromFile(file), "*/*");
+                                startActivity(intent);
+                            } catch (IOException e) {
+                                Toast.makeText(getApplicationContext(), "Не удалось получить файл", Toast.LENGTH_LONG).show();
+                                Log.e("FS_ERROR", "Error while saving temp file");
+                            }
+                            break;
                         case FS_COMMAND_ANSWER:
                             byte[] readBuf1 = (byte[]) msg.obj;
                             String readMessage1 = new String(readBuf1, 0, msg.arg2);
-                            mConversationArray.clear();
-                            mFileTypesArray.clear();
-                            // mConversationArrayAdapter.clear();
+                            clearConversation(false);
                             do {
                                 mFileTypesArray.add(readMessage1.substring(0, 1));
                                 readMessage1 = readMessage1.substring(2);
@@ -314,12 +407,56 @@ public class Bluetooth extends ListActivity {
                             } while (true);
                             mConversationArrayAdapter.notifyDataSetChanged();
                             break;
+                        case FS_ERROR:
+                            String error = new String((byte[]) msg.obj, 0, msg.arg2);
+                            Toast.makeText(getApplicationContext(), "Ошибка: " + error, Toast.LENGTH_LONG).show();
+                            Log.e("FS_ERROR", error);
+                            break;
                     }
                     break;
             }
 
         }
     };
+
+    private void addChatRecord(String msg, String type) {
+        if (msg != null && type != null) {
+            mConversationArray.add(msg);
+            mFileTypesArray.add(type);
+            mConversationArrayAdapter.notifyDataSetChanged();
+        }
+    }
+
+    private void addChatRecord(String msg) {
+        addChatRecord(msg, "N_");
+    }
+
+    private byte[] concatArrays(byte[]... arrays) {
+        // Determine the length of the result array
+        int totalLength = 0;
+        for (int i = 0; i < arrays.length; i++) {
+            totalLength += arrays[i].length;
+        }
+
+        // create the result array
+        byte[] result = new byte[totalLength];
+
+        // copy the source arrays into the result array
+        int currentIndex = 0;
+        for (int i = 0; i < arrays.length; i++) {
+            System.arraycopy(arrays[i], 0, result, currentIndex, arrays[i].length);
+            currentIndex += arrays[i].length;
+        }
+
+        return result;
+    }
+
+    private void clearConversation(boolean withNotify) {
+        mConversationArray.clear();
+        mFileTypesArray.clear();
+        if (withNotify)
+            mConversationArrayAdapter.notifyDataSetChanged();
+    }
 
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
         switch (requestCode) {
@@ -400,8 +537,6 @@ public class Bluetooth extends ListActivity {
             String file = mConversationArray.get(position);
             String type = mFileTypesArray.get(position);
 
-            // TODO
-
             if (convertView == null) {
                 LayoutInflater inflater = (LayoutInflater) getApplicationContext()
                         .getSystemService(Context.LAYOUT_INFLATER_SERVICE);
@@ -426,9 +561,10 @@ public class Bluetooth extends ListActivity {
             mViewHolder.bottomView.setTextColor(mColor);
 
             if (file != null) {
-                if (file.lastIndexOf(".") > -1) {
-                    String sub_ext = file.substring(file.lastIndexOf(".") + 1);
-
+                if (type == "F_") {
+                    String sub_ext = "";
+                    if (file.lastIndexOf(".") + 1 < file.length())
+                        sub_ext = file.substring(file.lastIndexOf(".") + 1);
 
 					/*
                      * This series of else if statements will determine which
@@ -498,7 +634,7 @@ public class Bluetooth extends ListActivity {
                         mViewHolder.icon.setImageResource(R.drawable.text);
                     }
 
-                } else {
+                } else if (type == "D_") {
                     mViewHolder.icon.setImageResource(R.drawable.folder);
                 }
                 mViewHolder.topView.setText(file);
@@ -506,5 +642,33 @@ public class Bluetooth extends ListActivity {
             return convertView;
         }
 
+    }
+
+    OnClickListener myOnClickListener = new OnClickListener() {
+        @Override
+        public void onClick(View v) {
+
+            switch (v.getId()) {
+
+                case R.id.back_button:
+                    if (mCurrentPath != "/") {
+                        setCurrentPath(mCurrentPath.substring(0, mCurrentPath.lastIndexOf("/")));
+                        mChatService.write(("FS_BACK:").getBytes());
+                    }
+                    break;
+
+                case R.id.home_button:
+                    setCurrentPath("/sdcard");
+                    mChatService.write(("FS_HOME:").getBytes());
+                    break;
+            }
+        }
+    };
+
+    private void setCurrentPath(String path) {
+        if (path == "" || path.indexOf('/') == -1)
+            return;
+        mCurrentPath = path;
+        pathTextView.setText(path);
     }
 }
