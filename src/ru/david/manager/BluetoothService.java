@@ -385,6 +385,8 @@ public class BluetoothService {
         private final InputStream mmInStream;
         private final OutputStream mmOutStream;
 
+        private final int MAX_COMAND_SIZE = "FS_COMMAND_ANSWER".getBytes().length;
+
         public ConnectedThread(BluetoothSocket socket) {
 
             mmSocket = socket;
@@ -405,7 +407,7 @@ public class BluetoothService {
 
         public void run() {
 
-            byte[] buffer = new byte[1024];
+            byte[] buffer = new byte[Bluetooth.MAX_FILE_SIZE];
             int bytes;
 
             // Прослушиваем InputStream пока не произойдет исключение
@@ -413,11 +415,10 @@ public class BluetoothService {
                 try {
                     // читаем из InputStream
                     bytes = mmInStream.read(buffer);
-
-                    if (new String(buffer).startsWith("FS_")) {
+                    if (new String(buffer, 0, bytes).startsWith("FS_")) {
                         String message = new String(buffer, 0, bytes);
                         String command = message.substring(0, message.indexOf(":"));
-                        message = message.replace(command + ":", "");
+
                         int com = Bluetooth.FS_DIR;
                         if (command.equals("FS_COMMAND_ANSWER"))
                             com = Bluetooth.FS_COMMAND_ANSWER;
@@ -431,7 +432,10 @@ public class BluetoothService {
                             com = Bluetooth.FS_FILE;
                         else if (command.equals("FS_ERROR"))
                             com = Bluetooth.FS_ERROR;
-                        mHandler.obtainMessage(Bluetooth.FS_COMMAND, com, message.getBytes().length, message.getBytes())
+
+                        byte[] resultBuffer = new byte[bytes - (command + ":").getBytes().length];
+                        System.arraycopy(buffer, (command + ":").getBytes().length, resultBuffer, 0, resultBuffer.length);
+                        mHandler.obtainMessage(Bluetooth.FS_COMMAND, com, resultBuffer.length, resultBuffer)
                                 .sendToTarget();
                     } else // посылаем прочитанные байты главной деятельности
                         mHandler.obtainMessage(Bluetooth.MESSAGE_READ, bytes, -1, buffer)

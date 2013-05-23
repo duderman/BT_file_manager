@@ -224,7 +224,7 @@ public final class Main extends ListActivity {
                     }
                 }
             }
-	    	
+
 	    	/*zip file */
             else if (item_ext.equalsIgnoreCase(".zip")) {
 
@@ -260,7 +260,7 @@ public final class Main extends ListActivity {
                     alert.show();
                 }
             }
-	    	
+
 	    	/* gzip files, this will be implemented later */
             else if (item_ext.equalsIgnoreCase(".gzip") ||
                     item_ext.equalsIgnoreCase(".gz")) {
